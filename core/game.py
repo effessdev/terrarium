@@ -5,7 +5,9 @@ from __future__ import annotations
 import pygame
 
 from config import settings
+from config.palette import PaletteGenerator
 from core.clock import SimulationClock
+from core.day_night import DayNightCycle
 from rendering.terrain_renderer import TerrainRenderer
 from utils.randomizer import Randomizer
 from world.world import World
@@ -34,15 +36,33 @@ class Game:
             settings.SIMULATION_HZ
         )
 
+        # One randomizer controls the entire simulation.
         self.randomizer = Randomizer()
 
+        # Every run gets its own coherent palette.
+        palette_generator = PaletteGenerator(
+            self.randomizer
+        )
+
+        self.palette = palette_generator.generate()
+
+        # Environmental time.
+        self.day_night = DayNightCycle(
+            settings.DAY_LENGTH_SECONDS
+        )
+
+        # Physical world.
         self.world = World(
             settings.WORLD_WIDTH,
             settings.WORLD_HEIGHT,
             self.randomizer,
         )
 
-        self.terrain_renderer = TerrainRenderer()
+        # Rendering.
+        self.terrain_renderer = TerrainRenderer(
+            self.palette,
+            self.day_night,
+        )
 
         self.font = pygame.font.Font(
             None,
@@ -97,6 +117,8 @@ class Game:
 
     def _simulation_step(self, dt: float) -> None:
         """Advance all world-level simulation systems."""
+        self.day_night.update(dt)
+
         self.world.update(dt)
 
     def _render(self) -> None:
@@ -126,6 +148,14 @@ class Game:
             (
                 "Simulation: "
                 f"{self.simulation_clock.total_simulation_time:.1f}s"
+            ),
+            (
+                f"Time: "
+                f"{self.day_night.formatted_time()}"
+            ),
+            (
+                f"Daylight: "
+                f"{self.day_night.daylight:.2f}"
             ),
             "ESC - Quit",
         ]

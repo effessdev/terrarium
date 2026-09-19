@@ -25,12 +25,17 @@ MAX_SIMULATION_STEPS_PER_FRAME = 5
 # World
 # ---------------------------------------------------------------------------
 
-# The simulation does not need a cell for every screen pixel.
-# A 160 x 90 grid gives us 8x8 pixel cells at 1280x720.
 WORLD_CELL_SIZE = 8
 
 WORLD_WIDTH = WINDOW_WIDTH // WORLD_CELL_SIZE
 WORLD_HEIGHT = WINDOW_HEIGHT // WORLD_CELL_SIZE
+
+# ---------------------------------------------------------------------------
+# Day / night
+# ---------------------------------------------------------------------------
+
+# Length of one complete simulated day in real seconds.
+DAY_LENGTH_SECONDS = 180.0
 
 # ---------------------------------------------------------------------------
 # Debug
