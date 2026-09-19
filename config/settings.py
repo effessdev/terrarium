@@ -36,7 +36,10 @@ SIMULATION_SPEEDS = (
 # World
 # ---------------------------------------------------------------------------
 
-WORLD_CELL_SIZE = 8
+# Zoom in the simulation by making each terrain cell and each object
+# effectively larger. This shrinks the active world size and reduces the
+# number of plants/worms that need to be simulated at once.
+WORLD_CELL_SIZE = 16
 
 WORLD_WIDTH = WINDOW_WIDTH // WORLD_CELL_SIZE
 WORLD_HEIGHT = WINDOW_HEIGHT // WORLD_CELL_SIZE
@@ -60,17 +63,18 @@ PLANT_REPRODUCTION_MATURITY = 0.55
 PLANT_SEEDLING_GROWTH_MIN = 0.25
 PLANT_SEEDLING_GROWTH_MAX = 0.50
 
-# Raise plant cap so the world can support denser worm populations
-# at high simulation speeds.
-PLANT_MAX_COUNT = 800
+# With the world zoomed in, keep the plant population lower so the scene
+# stays sparse and fast while still feeling alive.
+PLANT_MAX_COUNT = 400
 
 # ---------------------------------------------------------------------------
 # Worms
 # ---------------------------------------------------------------------------
 
 # Number of worms placed into a newly generated world.
-INITIAL_WORM_COUNT_MIN = 5
-INITIAL_WORM_COUNT_MAX = 9
+# The larger world scale means fewer worms are needed to fill the scene.
+INITIAL_WORM_COUNT_MIN = 3
+INITIAL_WORM_COUNT_MAX = 6
 
 # Worm movement.
 WORM_MOVE_SPEED = 2.4
