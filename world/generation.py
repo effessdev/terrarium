@@ -114,11 +114,6 @@ class WorldGenerator:
         small amount of local variation. A short smoothing pass removes
         abrupt cell-to-cell changes while preserving larger hills and
         shallow valleys.
-
-        Importantly, every generated height is clamped against the
-        actual world height rather than the number of columns already
-        generated. This prevents the left edge from becoming an
-        artificial diagonal slope.
         """
         if width <= 0 or height <= 0:
             return []
@@ -193,8 +188,6 @@ class WorldGenerator:
                 + local_variation
             )
 
-        # Smooth neighbouring columns so the terrain does not develop
-        # unnatural one-cell steps.
         smoothed_surface = raw_surface[:]
 
         for _ in range(2):
@@ -324,19 +317,24 @@ class WorldGenerator:
         terrain: list[list[TerrainCell]],
         ground_level: int,
     ) -> None:
-        """Scatter a small number of rocks across the terrain."""
+        """
+        Scatter a small number of large, irregular rock formations.
+
+        Rocks are intentionally much larger than the original one- or
+        two-cell rocks, so the number of formations is kept low.
+        """
         width = len(terrain[0])
         height = len(terrain)
 
         rock_count = self.randomizer.randint(
-            12,
-            24,
+            4,
+            8,
         )
 
         for _ in range(rock_count):
             x = self.randomizer.randint(
-                2,
-                width - 3,
+                3,
+                width - 4,
             )
 
             surface_y = self._find_surface_y(
@@ -345,27 +343,74 @@ class WorldGenerator:
                 ground_level,
             )
 
-            # Some rocks remain partly buried.
-            y = surface_y - self.randomizer.randint(
-                0,
-                1,
+            rock_width = self.randomizer.randint(
+                3,
+                6,
             )
 
-            if 0 <= y < height:
-                terrain[y][x] = TerrainCell(
-                    terrain_type=TerrainType.ROCK,
-                    moisture=0.05,
-                    nutrients=0.0,
+            rock_height = self.randomizer.randint(
+                2,
+                4,
+            )
+
+            half_width = rock_width // 2
+
+            # Give each rock a slightly different profile.
+            column_heights: list[int] = []
+
+            for offset in range(rock_width):
+                distance = abs(offset - half_width)
+                edge_factor = 1.0 - (
+                    distance / max(1, half_width + 1)
                 )
 
-                # Occasionally create a second cell,
-                # giving the rock a slightly larger shape.
-                if (
-                    self.randomizer.chance(0.35)
-                    and x + 1 < width
+                variation = self.randomizer.uniform(
+                    -0.6,
+                    0.6,
+                )
+
+                column_height = max(
+                    1,
+                    round(
+                        rock_height
+                        * (0.65 + edge_factor * 0.35)
+                        + variation,
+                    ),
+                )
+
+                column_heights.append(column_height)
+
+            for offset, column_height in enumerate(
+                column_heights
+            ):
+                rock_x = (
+                    x
+                    - half_width
+                    + offset
+                )
+
+                if not 0 <= rock_x < width:
+                    continue
+
+                column_surface_y = self._find_surface_y(
+                    terrain,
+                    rock_x,
+                    ground_level,
+                )
+
+                # Keep the formation attached to the local terrain
+                # rather than forcing every column to one height.
+                top_y = column_surface_y - (
+                    column_height - 1
+                )
+
+                for y in range(
+                    top_y,
+                    column_surface_y + 1,
                 ):
-                    terrain[y][x + 1] = TerrainCell(
-                        terrain_type=TerrainType.ROCK,
-                        moisture=0.05,
-                        nutrients=0.0,
-                    )
+                    if 0 <= y < height:
+                        terrain[y][rock_x] = TerrainCell(
+                            terrain_type=TerrainType.ROCK,
+                            moisture=0.05,
+                            nutrients=0.0,
+                        )
