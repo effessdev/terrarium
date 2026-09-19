@@ -121,11 +121,22 @@ class TerrainRenderer:
     ) -> None:
         """Draw a small sun/moon indicator."""
         width = settings.WINDOW_WIDTH
+        left_margin = 40
+        right_margin = 40
+
+        # Travel along a single smooth arc from left to right across the sky.
+        normalized = self.day_night.normalized_time
+        arc_angle = normalized * math_pi()
 
         x = int(
-            self.day_night.normalized_time
-            * (width - 80)
-        ) + 40
+            left_margin
+            + (
+                1.0
+                - math_cos(arc_angle)
+            )
+            * 0.5
+            * (width - left_margin - right_margin)
+        )
 
         # Keep the indicator in the upper part of the sky.
         horizon = (
@@ -134,14 +145,9 @@ class TerrainRenderer:
 
         arc_height = 130
 
-        angle = (
-            self.day_night.normalized_time
-            * math_tau()
-        )
-
         y = int(
             horizon
-            - math_sin(angle)
+            - math_sin(arc_angle)
             * arc_height
         )
 
@@ -169,11 +175,11 @@ class TerrainRenderer:
         )
 
 
-def math_tau() -> float:
+def math_pi() -> float:
     """Small local helper to avoid importing the entire math namespace."""
     import math
 
-    return math.tau
+    return math.pi
 
 
 def math_sin(value: float) -> float:
@@ -181,3 +187,10 @@ def math_sin(value: float) -> float:
     import math
 
     return math.sin(value)
+
+
+def math_cos(value: float) -> float:
+    """Small local helper for the sky arc."""
+    import math
+
+    return math.cos(value)
