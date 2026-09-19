@@ -1,0 +1,7 @@
+include = ["AGENTS.md", "TODO.md", "**/*.py"]
+exclude = []
+
+[[presets]]
+name = "all"
+include = ["**"]
+exclude = []
