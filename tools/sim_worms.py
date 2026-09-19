@@ -57,4 +57,14 @@ def run_sim(seconds: int = 60):
 
 
 if __name__ == '__main__':
-    run_sim(180)
+    import sys
+
+    seconds = 180
+
+    if len(sys.argv) > 1:
+        try:
+            seconds = int(sys.argv[1])
+        except Exception:
+            pass
+
+    run_sim(seconds)

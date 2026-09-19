@@ -52,15 +52,17 @@ DAY_LENGTH_SECONDS = 180.0
 # ---------------------------------------------------------------------------
 
 # Reproduction.
-PLANT_REPRODUCTION_COOLDOWN = 8.0
-PLANT_REPRODUCTION_RANGE = 4
+# Speed up plant reproduction and seedling size so food recovers
+# faster when worms overgraze.
+PLANT_REPRODUCTION_COOLDOWN = 4.0
+PLANT_REPRODUCTION_RANGE = 6
 PLANT_REPRODUCTION_MATURITY = 0.55
-PLANT_SEEDLING_GROWTH_MIN = 0.15
-PLANT_SEEDLING_GROWTH_MAX = 0.30
+PLANT_SEEDLING_GROWTH_MIN = 0.25
+PLANT_SEEDLING_GROWTH_MAX = 0.50
 
-# Hard cap so plants cannot overrun the world on very fast
-# simulation speeds or long unattended runs.
-PLANT_MAX_COUNT = 400
+# Raise plant cap so the world can support denser worm populations
+# at high simulation speeds.
+PLANT_MAX_COUNT = 800
 
 # ---------------------------------------------------------------------------
 # Worms
@@ -84,11 +86,11 @@ WORM_THIRST_THRESHOLD = 0.48
 # enough for plants to regrow before it needs to eat again.
 # Reduce hunger rate so worms can travel farther before needing food.
 # This makes them less likely to starve while crossing the world.
-WORM_HUNGER_RATE = 0.004
+WORM_HUNGER_RATE = 0.002
 WORM_THIRST_RATE = 0.016
 
 # Consumption.
-WORM_FOOD_AMOUNT = 0.55
+WORM_FOOD_AMOUNT = 0.90
 WORM_WATER_AMOUNT = 0.70
 
 # Growth.
@@ -96,9 +98,16 @@ WORM_GROWTH_RATE = 0.055
 WORM_MATURE_SIZE = 1.0
 
 # Reproduction.
-WORM_REPRODUCTION_AGE = 25.0
-WORM_REPRODUCTION_COOLDOWN = 45.0
-WORM_REPRODUCTION_RANGE = 3.0
+# Allow reproduction from a very young age to encourage rapid
+# population growth and stronger competition for food.
+WORM_REPRODUCTION_AGE = 0.1
+WORM_REPRODUCTION_COOLDOWN = 8.0
+WORM_REPRODUCTION_RANGE = 6.0
+
+# Reproduction tuning: lower the growth threshold so worms can reproduce
+# earlier and more frequently. These settings can be tuned to reach
+# a food-vs-worms equilibrium.
+WORM_REPRODUCTION_GROWTH_THRESHOLD = 0.60
 
 # Crowding.
 #
@@ -113,8 +122,8 @@ WORM_CROWDING_LIMIT = 5
 WORM_MIN_LIFESPAN = 180.0
 WORM_MAX_LIFESPAN = 300.0
 
-WORM_STARVATION_LIMIT = 60.0
-WORM_DEHYDRATION_LIMIT = 50.0
+WORM_STARVATION_LIMIT = 120.0
+WORM_DEHYDRATION_LIMIT = 100.0
 
 # Corpse decomposition.
 WORM_ROT_DURATION = 45.0

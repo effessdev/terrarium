@@ -1,4 +1,12 @@
-"""Worm entity and its basic life cycle."""
+"""Worm entity and its basic life cycle.
+
+This simplified rewrite aims for robust, predictable behaviour while
+maintaining the public API expected by the rest of the simulation.
+Key changes:
+- gentler hunger/dehydration accumulation
+- starvation/dehydration only advances when near-critical
+- clearer reproduction cooldowns
+"""
 
 from __future__ import annotations
 
@@ -10,8 +18,6 @@ from config import settings
 
 
 class WormState(Enum):
-    """Current behavioral state of a worm."""
-
     WANDERING = "wandering"
     SEEKING_FOOD = "seeking_food"
     SEEKING_WATER = "seeking_water"
@@ -21,8 +27,6 @@ class WormState(Enum):
 
 @dataclass
 class Worm:
-    """A small worm living inside the terrarium."""
-
     x: float
     y: float
 
@@ -48,47 +52,33 @@ class Worm:
     target_y: float | None = None
 
     def update_needs(self, dt: float) -> None:
-        """Increase hunger and thirst over time."""
+        """Advance hunger and thirst with forgiving accumulation."""
         if self.is_dead:
             return
 
         self.age += dt
 
-        self.hunger = min(
-            1.0,
-            self.hunger
-            + settings.WORM_HUNGER_RATE * dt,
-        )
+        # Base accumulation; tuned in settings. Clamp to [0,1].
+        self.hunger = min(1.0, self.hunger + settings.WORM_HUNGER_RATE * dt)
+        self.thirst = min(1.0, self.thirst + settings.WORM_THIRST_RATE * dt)
 
-        self.thirst = min(
-            1.0,
-            self.thirst
-            + settings.WORM_THIRST_RATE * dt,
-        )
+        # Cooldown progress
+        self.reproduction_timer = max(0.0, self.reproduction_timer - dt)
 
-        self.reproduction_timer = max(
-            0.0,
-            self.reproduction_timer - dt,
-        )
-
-        if self.hunger >= 0.8:
+        # Only count starvation when hunger is effectively full; when
+        # hunger is moderate we let starvation recover faster.
+        if self.hunger >= 0.95:
             self.starvation_time += dt
         else:
-            self.starvation_time = max(
-                0.0,
-                self.starvation_time - dt * 0.5,
-            )
+            self.starvation_time = max(0.0, self.starvation_time - dt)
 
-        if self.thirst >= 0.8:
+        if self.thirst >= 0.95:
             self.dehydration_time += dt
         else:
-            self.dehydration_time = max(
-                0.0,
-                self.dehydration_time - dt * 0.5,
-            )
+            self.dehydration_time = max(0.0, self.dehydration_time - dt)
 
     def choose_state(self) -> None:
-        """Choose behavior based on current condition."""
+        """Pick a behaviour based on needs; water takes priority."""
         if self.is_dead:
             self.state = WormState.DEAD
             return
@@ -101,168 +91,81 @@ class Worm:
             self.state = WormState.SEEKING_FOOD
             return
 
-        # When not urgently seeking water or food, worms should
-        # wander around the world rather than immediately sleeping.
-        # Sleeping is handled separately (e.g. by time-of-day
-        # or explicit conditions) so default to wandering here.
         self.state = WormState.WANDERING
 
     def sleep(self) -> None:
-        """Settle into a resting state without drifting."""
         self.target_x = None
         self.target_y = None
         self.wander_timer = 0.0
 
-    def move_towards(
-        self,
-        target_x: float,
-        target_y: float,
-        dt: float,
-    ) -> bool:
-        """
-        Move toward a target.
+    def move_towards(self, target_x: float, target_y: float, dt: float) -> bool:
+        dx = target_x - self.x
+        dy = target_y - self.y
 
-        Returns True when the worm reaches the target.
-        """
-        delta_x = target_x - self.x
-        delta_y = target_y - self.y
-
-        distance = math.hypot(
-            delta_x,
-            delta_y,
-        )
-
-        if distance <= 0.15:
+        dist = math.hypot(dx, dy)
+        if dist <= 0.15:
             self.x = target_x
             self.y = target_y
             return True
 
-        direction_x = delta_x / distance
-        direction_y = delta_y / distance
+        nx = dx / dist
+        ny = dy / dist
 
-        self.x += (
-            direction_x
-            * settings.WORM_MOVE_SPEED
-            * dt
-        )
+        speed = settings.WORM_MOVE_SPEED
 
-        self.y += (
-            direction_y
-            * settings.WORM_MOVE_SPEED
-            * dt
-        )
+        self.x += nx * speed * dt
+        self.y += ny * speed * dt
 
-        if abs(direction_x) > 0.05:
-            self.direction = (
-                1.0
-                if direction_x > 0.0
-                else -1.0
-            )
+        if abs(nx) > 0.05:
+            self.direction = 1.0 if nx > 0 else -1.0
 
         return False
 
-    def wander(
-        self,
-        dt: float,
-        width: int,
-        height: int,
-    ) -> None:
-        """Move slowly in a random-looking direction."""
+    def wander(self, dt: float, width: int, height: int) -> None:
         self.wander_timer -= dt
 
-        if (
-            self.wander_timer <= 0.0
-            or self.target_x is None
-            or self.target_y is None
-        ):
-            self.wander_timer = (
-                settings.WORM_WANDER_INTERVAL
-            )
+        if self.wander_timer <= 0.0 or self.target_x is None or self.target_y is None:
+            self.wander_timer = settings.WORM_WANDER_INTERVAL
 
-            angle = (
-                self.direction * 0.5
-            )
+            angle = (self.direction * 0.5) + (math.sin(self.age * 0.3) * 0.6)
 
-            self.target_x = max(
-                1.0,
-                min(
-                    width - 2.0,
-                    self.x
-                    + math.cos(angle) * 4.0,
-                ),
-            )
+            self.target_x = max(1.0, min(width - 2.0, self.x + math.cos(angle) * 6.0))
+            self.target_y = max(1.0, min(height - 2.0, self.y + math.sin(angle) * 3.0))
 
-            self.target_y = max(
-                1.0,
-                min(
-                    height - 2.0,
-                    self.y
-                    + math.sin(angle) * 2.0,
-                ),
-            )
-
-        self.move_towards(
-            self.target_x,
-            self.target_y,
-            dt,
-        )
+        self.move_towards(self.target_x, self.target_y, dt)
 
     def eat(self) -> None:
-        """Eat some food and become less hungry."""
-        self.hunger = max(
-            0.0,
-            self.hunger
-            - settings.WORM_FOOD_AMOUNT,
-        )
+        # Eating gives a larger, immediate benefit and reduces starvation
+        self.hunger = max(0.0, self.hunger - settings.WORM_FOOD_AMOUNT)
+        self.starvation_time = max(0.0, self.starvation_time - 5.0)
 
     def drink(self) -> None:
-        """Drink water and become less thirsty."""
-        self.thirst = max(
-            0.0,
-            self.thirst
-            - settings.WORM_WATER_AMOUNT,
-        )
+        self.thirst = max(0.0, self.thirst - settings.WORM_WATER_AMOUNT)
+        self.dehydration_time = max(0.0, self.dehydration_time - 5.0)
 
     def grow_step(self, dt: float) -> None:
-        """Grow while the worm is alive."""
         if self.is_dead:
             return
 
-        self.growth = min(
-            settings.WORM_MATURE_SIZE,
-            self.growth
-            + settings.WORM_GROWTH_RATE * dt,
-        )
+        self.growth = min(settings.WORM_MATURE_SIZE, self.growth + settings.WORM_GROWTH_RATE * dt)
 
     def can_reproduce(self) -> bool:
-        """Return whether this worm can currently reproduce."""
         return (
             not self.is_dead
             and self.age >= settings.WORM_REPRODUCTION_AGE
-            and self.growth >= 0.8
-            and self.hunger < 0.35
-            and self.thirst < 0.35
+            and self.growth >= settings.WORM_REPRODUCTION_GROWTH_THRESHOLD
+            and self.hunger < 0.6
+            and self.thirst < 0.6
             and self.reproduction_timer <= 0.0
         )
 
     def reproduce(self) -> None:
-        """Start the reproduction cooldown."""
-        self.reproduction_timer = (
-            settings.WORM_REPRODUCTION_COOLDOWN
-        )
-
-        self.hunger = min(
-            1.0,
-            self.hunger + 0.12,
-        )
-
-        self.thirst = min(
-            1.0,
-            self.thirst + 0.08,
-        )
+        # start cooldown and apply a small cost
+        self.reproduction_timer = settings.WORM_REPRODUCTION_COOLDOWN
+        self.hunger = min(1.0, self.hunger + 0.18)
+        self.thirst = min(1.0, self.thirst + 0.10)
 
     def die(self) -> None:
-        """Kill the worm and begin decomposition."""
         if self.is_dead:
             return
 
@@ -271,50 +174,24 @@ class Worm:
         self.target_y = None
 
     def update_rot(self, dt: float) -> None:
-        """Progressively decompose the dead worm."""
         if not self.is_dead:
             return
 
-        self.rot = min(
-            1.0,
-            self.rot
-            + dt / settings.WORM_ROT_DURATION,
-        )
+        self.rot = min(1.0, self.rot + dt / settings.WORM_ROT_DURATION)
 
     def should_remove(self) -> bool:
-        """Return True once the corpse has completely rotted."""
         return self.is_dead and self.rot >= 1.0
 
     @property
     def is_dead(self) -> bool:
-        """Return whether the worm has died."""
         return self.state == WormState.DEAD
 
     @property
     def condition(self) -> float:
-        """
-        Return a simple health/condition value.
-
-        1.0 is healthy, 0.0 is extremely distressed.
-        """
         if self.is_dead:
             return 0.0
-
-        return max(
-            0.0,
-            min(
-                1.0,
-                1.0
-                - max(
-                    self.hunger,
-                    self.thirst,
-                ),
-            ),
-        )
+        return max(0.0, min(1.0, 1.0 - max(self.hunger, self.thirst)))
 
     @property
     def size(self) -> float:
-        """Return visual size based on growth."""
-        return 0.45 + (
-            0.55 * self.growth
-        )
+        return 0.45 + (0.55 * self.growth)
