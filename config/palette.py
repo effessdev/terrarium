@@ -95,21 +95,24 @@ class PaletteGenerator:
             )
         ) % 1.0
 
-        air_hue = (
-            base_hue
-            + self.randomizer.uniform(
-                0.02,
-                0.08,
-            )
-        ) % 1.0
+        # The sky is intentionally blue rather than derived from
+        # the earthy base hue. This keeps daytime visibly bright
+        # while the day/night renderer handles nighttime darkness.
+        air_hue = self.randomizer.uniform(
+            0.55,
+            0.63,
+        )
 
         return Palette(
             air=_hsv_to_rgb(
                 air_hue,
-                0.16,
                 self.randomizer.uniform(
-                    0.10,
-                    0.15,
+                    0.35,
+                    0.55,
+                ),
+                self.randomizer.uniform(
+                    0.62,
+                    0.78,
                 ),
             ),
 
