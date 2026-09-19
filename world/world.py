@@ -157,6 +157,27 @@ class World:
 
         return None
 
+    def _find_worm_surface_y(
+        self,
+        x: int,
+    ) -> int | None:
+        """
+        Find the uppermost cell a worm can stand on.
+
+        Unlike plants, worms treat water as walkable surface so they
+        can reach a pool to drink. Air is never walkable.
+        """
+        for y in range(self.height):
+            cell = self.terrain[y][x]
+
+            if (
+                cell.is_solid()
+                or cell.is_water()
+            ):
+                return y
+
+        return None
+
     def update(
         self,
         dt: float,
@@ -334,7 +355,7 @@ class World:
                 # Sleeping worms stay still.
                 worm.sleep()
 
-            self._keep_worm_in_world(worm)
+            self._keep_worm_on_ground(worm)
 
         self._handle_worm_reproduction()
 
@@ -631,11 +652,17 @@ class World:
 
         self.worms.extend(new_worms)
 
-    def _keep_worm_in_world(
+    def _keep_worm_on_ground(
         self,
         worm: Worm,
     ) -> None:
-        """Keep worms inside the terrain."""
+        """
+        Keep a worm inside the world and standing on the surface.
+
+        Worms cannot fly: their vertical position is always snapped
+        to the topmost walkable cell (solid ground or water) in the
+        column they currently occupy.
+        """
         worm.x = max(
             1.0,
             min(
@@ -643,6 +670,13 @@ class World:
                 worm.x,
             ),
         )
+
+        column = int(worm.x)
+
+        surface_y = self._find_worm_surface_y(column)
+
+        if surface_y is not None:
+            worm.y = float(surface_y)
 
         worm.y = max(
             1.0,
