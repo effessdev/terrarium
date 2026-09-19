@@ -21,6 +21,22 @@ TARGET_FPS = 60
 SIMULATION_HZ = 30
 MAX_SIMULATION_STEPS_PER_FRAME = 5
 
+# Simulation speed multiplier.
+# 1.0 = normal speed
+# 2.0 = 2x
+# 4.0 = 4x
+# etc.
+DEFAULT_SIMULATION_SPEED = 1.0
+
+SIMULATION_SPEEDS = (
+    0.0,
+    1.0,
+    2.0,
+    4.0,
+    8.0,
+    16.0,
+)
+
 # ---------------------------------------------------------------------------
 # World
 # ---------------------------------------------------------------------------
