@@ -357,6 +357,8 @@ class World:
 
             self._keep_worm_on_ground(worm)
 
+        self._apply_crowding_deaths()
+
         self._handle_worm_reproduction()
 
         self.worms = [
@@ -364,6 +366,48 @@ class World:
             for worm in self.worms
             if not worm.should_remove()
         ]
+
+    def _apply_crowding_deaths(self) -> None:
+        """
+        Kill worms that are packed too tightly together.
+
+        Density control that does not rely on a global population
+        cap. Only living worms are counted, and corpses do not
+        crowd out the living.
+        """
+        radius_squared = (
+            settings.WORM_CROWDING_RADIUS
+            * settings.WORM_CROWDING_RADIUS
+        )
+
+        limit = settings.WORM_CROWDING_LIMIT
+
+        living = [
+            worm
+            for worm in self.worms
+            if not worm.is_dead
+        ]
+
+        for index, worm in enumerate(living):
+            neighbours = 0
+
+            for other_index, other in enumerate(living):
+                if other_index == index:
+                    continue
+
+                delta_x = other.x - worm.x
+                delta_y = other.y - worm.y
+
+                if (
+                    delta_x * delta_x
+                    + delta_y * delta_y
+                    <= radius_squared
+                ):
+                    neighbours += 1
+
+                    if neighbours >= limit:
+                        worm.die()
+                        break
 
     def _update_worm_water_behavior(
         self,

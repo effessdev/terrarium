@@ -52,14 +52,15 @@ DAY_LENGTH_SECONDS = 180.0
 # ---------------------------------------------------------------------------
 
 # Reproduction.
-PLANT_REPRODUCTION_COOLDOWN = 30.0
+PLANT_REPRODUCTION_COOLDOWN = 8.0
 PLANT_REPRODUCTION_RANGE = 4
-PLANT_SEEDLING_GROWTH_MIN = 0.05
-PLANT_SEEDLING_GROWTH_MAX = 0.15
+PLANT_REPRODUCTION_MATURITY = 0.55
+PLANT_SEEDLING_GROWTH_MIN = 0.15
+PLANT_SEEDLING_GROWTH_MAX = 0.30
 
 # Hard cap so plants cannot overrun the world on very fast
 # simulation speeds or long unattended runs.
-PLANT_MAX_COUNT = 240
+PLANT_MAX_COUNT = 400
 
 # ---------------------------------------------------------------------------
 # Worms
@@ -78,12 +79,15 @@ WORM_HUNGER_THRESHOLD = 0.42
 WORM_THIRST_THRESHOLD = 0.48
 
 # Need depletion.
-WORM_HUNGER_RATE = 0.018
-WORM_THIRST_RATE = 0.026
+#
+# Slower than before so a single meal sustains a worm long
+# enough for plants to regrow before it needs to eat again.
+WORM_HUNGER_RATE = 0.010
+WORM_THIRST_RATE = 0.016
 
 # Consumption.
-WORM_FOOD_AMOUNT = 0.38
-WORM_WATER_AMOUNT = 0.55
+WORM_FOOD_AMOUNT = 0.55
+WORM_WATER_AMOUNT = 0.70
 
 # Growth.
 WORM_GROWTH_RATE = 0.055
@@ -94,12 +98,21 @@ WORM_REPRODUCTION_AGE = 25.0
 WORM_REPRODUCTION_COOLDOWN = 45.0
 WORM_REPRODUCTION_RANGE = 3.0
 
+# Crowding.
+#
+# A worm dies when too many other living worms are packed into
+# its immediate neighbourhood. This caps density without needing
+# a global population limit and without breaking reproduction,
+# which relies on two worms being moderately close.
+WORM_CROWDING_RADIUS = 1.0
+WORM_CROWDING_LIMIT = 5
+
 # Lifespan and death.
 WORM_MIN_LIFESPAN = 180.0
 WORM_MAX_LIFESPAN = 300.0
 
-WORM_STARVATION_LIMIT = 35.0
-WORM_DEHYDRATION_LIMIT = 28.0
+WORM_STARVATION_LIMIT = 60.0
+WORM_DEHYDRATION_LIMIT = 50.0
 
 # Corpse decomposition.
 WORM_ROT_DURATION = 45.0

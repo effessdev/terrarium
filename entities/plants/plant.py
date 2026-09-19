@@ -70,9 +70,16 @@ class Plant:
         )
 
     def can_reproduce(self) -> bool:
-        """Return whether this plant can currently spread."""
+        """
+        Return whether this plant can currently spread.
+
+        Plants do not need to be fully grown to reproduce; a
+        partially grown plant can still seed nearby ground, which
+        keeps the food supply alive under grazing pressure.
+        """
         return (
-            self.growth >= self.max_growth
+            self.growth
+            >= settings.PLANT_REPRODUCTION_MATURITY
             and self.reproduction_timer <= 0.0
         )
 
