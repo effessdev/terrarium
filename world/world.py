@@ -157,9 +157,146 @@ class World:
 
         return None
 
-    def update(self, dt: float) -> None:
+    def update(
+        self,
+        dt: float,
+        daylight: float,
+    ) -> None:
         """Update world-level simulation."""
+        self._update_plants(dt, daylight)
         self._update_worms(dt)
+
+    # ------------------------------------------------------------------
+    # Plants
+    # ------------------------------------------------------------------
+
+    def _update_plants(
+        self,
+        dt: float,
+        daylight: float,
+    ) -> None:
+        """Update plant growth and reproduction."""
+        for plant in self.plants:
+            moisture = self.terrain[
+                plant.y
+            ][plant.x].moisture
+
+            nutrients = self.terrain[
+                plant.y
+            ][plant.x].nutrients
+
+            plant.update(
+                dt,
+                daylight,
+                moisture,
+                nutrients,
+            )
+
+        self._handle_plant_reproduction()
+
+    def _handle_plant_reproduction(self) -> None:
+        """Let mature plants spread to nearby empty ground."""
+        if len(self.plants) >= settings.PLANT_MAX_COUNT:
+            return
+
+        new_plants: list[Plant] = []
+
+        for plant in self.plants:
+            if not plant.can_reproduce():
+                continue
+
+            if (
+                len(self.plants) + len(new_plants)
+                >= settings.PLANT_MAX_COUNT
+            ):
+                break
+
+            child = self._spawn_seedling(plant)
+
+            if child is None:
+                continue
+
+            plant.reproduce()
+            new_plants.append(child)
+
+        self.plants.extend(new_plants)
+
+    def _spawn_seedling(
+        self,
+        parent: Plant,
+    ) -> Plant | None:
+        """
+        Try to create a seedling near the parent.
+
+        Returns None when no valid nearby cell is available.
+        """
+        offsets = self._seedling_offsets()
+
+        for offset_x in offsets:
+            child_x = parent.x + offset_x
+
+            if not 1 <= child_x < self.width - 1:
+                continue
+
+            surface_y = self._find_surface_y(child_x)
+
+            if surface_y is None:
+                continue
+
+            cell = self.terrain[surface_y][child_x]
+
+            if cell.terrain_type not in {
+                TerrainType.SOIL,
+                TerrainType.SAND,
+            }:
+                continue
+
+            if self._plant_at(child_x, surface_y):
+                continue
+
+            return Grass(
+                x=child_x,
+                y=surface_y,
+                growth=self.randomizer.uniform(
+                    settings.PLANT_SEEDLING_GROWTH_MIN,
+                    settings.PLANT_SEEDLING_GROWTH_MAX,
+                ),
+            )
+
+        return None
+
+    def _seedling_offsets(self) -> list[int]:
+        """Return candidate horizontal offsets for a seedling."""
+        max_offset = settings.PLANT_REPRODUCTION_RANGE
+
+        offsets = [
+            offset
+            for offset in range(
+                -max_offset,
+                max_offset + 1,
+            )
+            if offset != 0
+        ]
+
+        self.randomizer.shuffle(offsets)
+
+        return offsets
+
+    def _plant_at(
+        self,
+        x: int,
+        y: int,
+    ) -> bool:
+        """Return whether a plant already occupies the cell."""
+        for plant in self.plants:
+            if plant.x == x and plant.y == y:
+                return True
+
+        return False
+
+    # ------------------------------------------------------------------
+    # Worms
+    # ------------------------------------------------------------------
 
     def _update_worms(self, dt: float) -> None:
         """Update worm needs, movement, feeding, reproduction and decay."""

@@ -48,6 +48,20 @@ WORLD_HEIGHT = WINDOW_HEIGHT // WORLD_CELL_SIZE
 DAY_LENGTH_SECONDS = 180.0
 
 # ---------------------------------------------------------------------------
+# Plants
+# ---------------------------------------------------------------------------
+
+# Reproduction.
+PLANT_REPRODUCTION_COOLDOWN = 30.0
+PLANT_REPRODUCTION_RANGE = 4
+PLANT_SEEDLING_GROWTH_MIN = 0.05
+PLANT_SEEDLING_GROWTH_MAX = 0.15
+
+# Hard cap so plants cannot overrun the world on very fast
+# simulation speeds or long unattended runs.
+PLANT_MAX_COUNT = 240
+
+# ---------------------------------------------------------------------------
 # Worms
 # ---------------------------------------------------------------------------
 

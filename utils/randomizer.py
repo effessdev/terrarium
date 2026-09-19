@@ -43,6 +43,10 @@ class Randomizer:
         """Choose one item from a non-empty sequence."""
         return self._random.choice(sequence)
 
+    def shuffle(self, sequence) -> None:
+        """Shuffle a sequence in place."""
+        self._random.shuffle(sequence)
+
     def chance(self, probability: float) -> bool:
         """
         Return True with the specified probability.

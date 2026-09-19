@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from config import settings
+
 
 @dataclass
 class Plant:
@@ -18,6 +20,8 @@ class Plant:
     growth_rate: float = 0.08
     max_growth: float = 1.0
 
+    reproduction_timer: float = 0.0
+
     def update(
         self,
         dt: float,
@@ -27,6 +31,11 @@ class Plant:
     ) -> None:
         """Advance plant growth using environmental conditions."""
         self.age += dt
+
+        self.reproduction_timer = max(
+            0.0,
+            self.reproduction_timer - dt,
+        )
 
         light_factor = max(
             0.0,
@@ -58,6 +67,19 @@ class Plant:
         self.growth = min(
             self.growth,
             self.max_growth,
+        )
+
+    def can_reproduce(self) -> bool:
+        """Return whether this plant can currently spread."""
+        return (
+            self.growth >= self.max_growth
+            and self.reproduction_timer <= 0.0
+        )
+
+    def reproduce(self) -> None:
+        """Start the reproduction cooldown."""
+        self.reproduction_timer = (
+            settings.PLANT_REPRODUCTION_COOLDOWN
         )
 
     @property

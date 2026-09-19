@@ -195,27 +195,10 @@ class Game:
         """Advance all world-level simulation systems."""
         self.day_night.update(dt)
 
-        self._update_plants(dt)
-
-        self.world.update(dt)
-
-    def _update_plants(self, dt: float) -> None:
-        """Update plant growth."""
-        for plant in self.world.plants:
-            moisture = self.world.terrain[
-                plant.y
-            ][plant.x].moisture
-
-            nutrients = self.world.terrain[
-                plant.y
-            ][plant.x].nutrients
-
-            plant.update(
-                dt,
-                self.day_night.daylight,
-                moisture,
-                nutrients,
-            )
+        self.world.update(
+            dt,
+            self.day_night.daylight,
+        )
 
     def _render(self) -> None:
         """Render the current world."""
