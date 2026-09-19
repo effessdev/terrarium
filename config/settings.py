@@ -82,7 +82,9 @@ WORM_THIRST_THRESHOLD = 0.48
 #
 # Slower than before so a single meal sustains a worm long
 # enough for plants to regrow before it needs to eat again.
-WORM_HUNGER_RATE = 0.010
+# Reduce hunger rate so worms can travel farther before needing food.
+# This makes them less likely to starve while crossing the world.
+WORM_HUNGER_RATE = 0.004
 WORM_THIRST_RATE = 0.016
 
 # Consumption.

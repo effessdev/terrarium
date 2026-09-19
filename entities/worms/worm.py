@@ -101,7 +101,11 @@ class Worm:
             self.state = WormState.SEEKING_FOOD
             return
 
-        self.state = WormState.SLEEPING
+        # When not urgently seeking water or food, worms should
+        # wander around the world rather than immediately sleeping.
+        # Sleeping is handled separately (e.g. by time-of-day
+        # or explicit conditions) so default to wandering here.
+        self.state = WormState.WANDERING
 
     def sleep(self) -> None:
         """Settle into a resting state without drifting."""

@@ -491,7 +491,10 @@ class World:
         best_distance = math.inf
         best_target: tuple[float, float] | None = None
 
-        max_distance = 20.0
+        # Allow worms to search a reasonably large area for water.
+        # Previously a hard-coded small radius made distant pools
+        # effectively invisible and led to mass dehydration.
+        max_distance = max(self.width, self.height)
 
         min_x = max(
             0,
@@ -721,6 +724,49 @@ class World:
 
         if surface_y is not None:
             worm.y = float(surface_y)
+
+        # Ensure the worm doesn't occupy the same integer cell as
+        # any other worm. If the current column is already taken,
+        # nudge the worm left/right to the nearest free column.
+        col = int(worm.x)
+        row = int(worm.y)
+
+        occupied = False
+        for other in self.worms:
+            if other is worm:
+                continue
+            if int(other.x) == col and int(other.y) == row:
+                occupied = True
+                break
+
+        if occupied:
+            found = False
+            for offset in range(1, 4):
+                for direction in (-1, 1):
+                    new_col = col + direction * offset
+                    if not 1 <= new_col < self.width - 1:
+                        continue
+
+                    new_surface = self._find_worm_surface_y(new_col)
+                    if new_surface is None:
+                        continue
+
+                    collision = False
+                    for other in self.worms:
+                        if other is worm:
+                            continue
+                        if int(other.x) == new_col and int(other.y) == new_surface:
+                            collision = True
+                            break
+
+                    if not collision:
+                        worm.x = float(max(1.0, min(self.width - 2.0, new_col)))
+                        worm.y = float(new_surface)
+                        found = True
+                        break
+
+                if found:
+                    break
 
         worm.y = max(
             1.0,
