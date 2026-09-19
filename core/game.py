@@ -6,7 +6,9 @@ import pygame
 
 from config import settings
 from core.clock import SimulationClock
+from rendering.terrain_renderer import TerrainRenderer
 from utils.randomizer import Randomizer
+from world.world import World
 
 
 class Game:
@@ -16,17 +18,36 @@ class Game:
         pygame.init()
 
         self.screen = pygame.display.set_mode(
-            (settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT)
+            (
+                settings.WINDOW_WIDTH,
+                settings.WINDOW_HEIGHT,
+            )
         )
 
-        pygame.display.set_caption(settings.WINDOW_TITLE)
+        pygame.display.set_caption(
+            settings.WINDOW_TITLE
+        )
 
         self.render_clock = pygame.time.Clock()
-        self.simulation_clock = SimulationClock(settings.SIMULATION_HZ)
+
+        self.simulation_clock = SimulationClock(
+            settings.SIMULATION_HZ
+        )
 
         self.randomizer = Randomizer()
 
-        self.font = pygame.font.Font(None, 24)
+        self.world = World(
+            settings.WORLD_WIDTH,
+            settings.WORLD_HEIGHT,
+            self.randomizer,
+        )
+
+        self.terrain_renderer = TerrainRenderer()
+
+        self.font = pygame.font.Font(
+            None,
+            24,
+        )
 
         self.running = False
 
@@ -41,7 +62,9 @@ class Game:
             self._update_simulation()
             self._render()
 
-            self.render_clock.tick(settings.TARGET_FPS)
+            self.render_clock.tick(
+                settings.TARGET_FPS
+            )
 
         self._shutdown()
 
@@ -61,57 +84,32 @@ class Game:
 
         while (
             self.simulation_clock.should_step()
-            and steps < settings.MAX_SIMULATION_STEPS_PER_FRAME
+            and steps
+            < settings.MAX_SIMULATION_STEPS_PER_FRAME
         ):
             self._simulation_step(
                 self.simulation_clock.fixed_dt
             )
 
             self.simulation_clock.consume_step()
+
             steps += 1
 
     def _simulation_step(self, dt: float) -> None:
-        """
-        Perform one simulation step.
-
-        Future simulation systems will be called here.
-
-        Examples:
-            water.update(...)
-            plants.update(...)
-            insects.update(...)
-        """
-        _ = dt
+        """Advance all world-level simulation systems."""
+        self.world.update(dt)
 
     def _render(self) -> None:
-        """Render the current application state."""
-        self.screen.fill(settings.BACKGROUND_COLOR)
-
-        self._draw_title()
+        """Render the current world."""
+        self.terrain_renderer.render(
+            self.screen,
+            self.world,
+        )
 
         if settings.SHOW_DEBUG_INFO:
             self._draw_debug_info()
 
         pygame.display.flip()
-
-    def _draw_title(self) -> None:
-        """Draw the temporary Phase 1 title."""
-        title_font = pygame.font.Font(None, 64)
-
-        text = title_font.render(
-            "TERRARIUM",
-            True,
-            (210, 220, 210),
-        )
-
-        text_rect = text.get_rect(
-            center=(
-                settings.WINDOW_WIDTH // 2,
-                settings.WINDOW_HEIGHT // 2,
-            )
-        )
-
-        self.screen.blit(text, text_rect)
 
     def _draw_debug_info(self) -> None:
         """Draw basic runtime information."""
@@ -120,7 +118,15 @@ class Game:
         lines = [
             f"FPS: {fps:.1f}",
             f"Seed: {self.randomizer.seed}",
-            f"Simulation: {self.simulation_clock.total_simulation_time:.1f}s",
+            (
+                "World: "
+                f"{self.world.width}x"
+                f"{self.world.height}"
+            ),
+            (
+                "Simulation: "
+                f"{self.simulation_clock.total_simulation_time:.1f}s"
+            ),
             "ESC - Quit",
         ]
 
@@ -131,10 +137,14 @@ class Game:
             text = self.font.render(
                 line,
                 True,
-                (190, 200, 195),
+                (220, 225, 220),
             )
 
-            self.screen.blit(text, (x, y))
+            self.screen.blit(
+                text,
+                (x, y),
+            )
+
             y += 24
 
     @staticmethod
