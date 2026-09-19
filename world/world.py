@@ -7,7 +7,7 @@ import math
 from config import settings
 from entities.plants.grass import Grass
 from entities.plants.plant import Plant
-from entities.worms.worm import Worm
+from entities.worms.worm import Worm, WormState
 from utils.randomizer import Randomizer
 from world.generation import WorldGenerator
 from world.terrain import TerrainCell, TerrainType
@@ -173,22 +173,25 @@ class World:
 
             worm.choose_state()
 
-            if worm.state.value == "seeking_water":
+            if worm.state == WormState.SEEKING_WATER:
                 self._update_worm_water_behavior(
                     worm,
                     dt,
                 )
-            elif worm.state.value == "seeking_food":
+            elif worm.state == WormState.SEEKING_FOOD:
                 self._update_worm_food_behavior(
                     worm,
                     dt,
                 )
-            else:
+            elif worm.state == WormState.WANDERING:
                 worm.wander(
                     dt,
                     self.width,
                     self.height,
                 )
+            else:
+                # Sleeping worms stay still.
+                worm.sleep()
 
             self._keep_worm_in_world(worm)
 

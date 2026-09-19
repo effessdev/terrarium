@@ -110,28 +110,7 @@ class WormRenderer:
         y: int,
     ) -> None:
         """Render a living worm according to its condition."""
-        base_color = self.palette.insect
-
-        if worm.thirst >= settings.WORM_THIRST_THRESHOLD:
-            color = _blend(
-                base_color,
-                (180, 195, 215),
-                min(
-                    1.0,
-                    worm.thirst,
-                ) * 0.45,
-            )
-        elif worm.hunger >= settings.WORM_HUNGER_THRESHOLD:
-            color = _blend(
-                base_color,
-                (125, 82, 55),
-                min(
-                    1.0,
-                    worm.hunger,
-                ) * 0.40,
-            )
-        else:
-            color = base_color
+        color = self._worm_color(worm)
 
         size = max(
             3,
@@ -141,16 +120,6 @@ class WormRenderer:
             ),
         )
 
-        if worm.state == WormState.SLEEPING:
-            self._draw_sleeping_body(
-                surface,
-                x,
-                y,
-                size,
-                color,
-            )
-            return
-
         self._draw_worm_body(
             surface,
             worm,
@@ -159,6 +128,35 @@ class WormRenderer:
             size,
             color,
         )
+
+    def _worm_color(
+        self,
+        worm: Worm,
+    ) -> tuple[int, int, int]:
+        """Return the worm color based on its most urgent need."""
+        base_color = self.palette.insect
+
+        if worm.thirst >= settings.WORM_THIRST_THRESHOLD:
+            return _blend(
+                base_color,
+                (180, 195, 215),
+                min(
+                    1.0,
+                    worm.thirst,
+                ) * 0.45,
+            )
+
+        if worm.hunger >= settings.WORM_HUNGER_THRESHOLD:
+            return _blend(
+                base_color,
+                (125, 82, 55),
+                min(
+                    1.0,
+                    worm.hunger,
+                ) * 0.40,
+            )
+
+        return base_color
 
     def _draw_worm_body(
         self,
@@ -224,6 +222,40 @@ class WormRenderer:
                 radius,
             )
 
+    def _render_sleeping(
+        self,
+        surface: pygame.Surface,
+        worm: Worm,
+        x: int,
+        y: int,
+    ) -> None:
+        """Render a worm curled up while sleeping."""
+        color = self._worm_color(worm)
+
+        size = max(
+            3,
+            int(
+                3.0
+                + worm.size * 4.0
+            ),
+        )
+
+        self._draw_sleeping_body(
+            surface,
+            x,
+            y,
+            size,
+            color,
+        )
+
+        self._draw_sleep_marks(
+            surface,
+            x,
+            y,
+            size,
+            color,
+        )
+
     def _draw_sleeping_body(
         self,
         surface: pygame.Surface,
@@ -232,32 +264,72 @@ class WormRenderer:
         size: int,
         color: tuple[int, int, int],
     ) -> None:
-        """Draw a worm curled into a sleeping circle."""
-        outer_radius = max(
-            5,
-            size + 3,
+        """
+        Draw a worm curled into a tight spiral.
+
+        The body is a chain of shrinking circles placed along a
+        spiral, so it reads as a coiled worm rather than a ring.
+        """
+        turns = 1.6
+        steps = max(
+            10,
+            int(size * 3.5),
         )
 
-        inner_radius = max(
-            2,
-            size // 2,
+        max_radius = max(
+            5.0,
+            size * 1.4,
         )
 
-        pygame.draw.circle(
-            surface,
-            color,
-            (x, y),
-            outer_radius,
-            width=max(2, size // 2),
-        )
+        for index in range(steps):
+            progress = index / (steps - 1)
 
-        pygame.draw.circle(
-            surface,
-            self.palette.soil,
-            (x, y),
-            inner_radius,
-        )
+            angle = (
+                progress
+                * math.tau
+                * turns
+            )
 
+            radius = (
+                max_radius
+                * (1.0 - progress * 0.85)
+            )
+
+            segment_x = int(
+                x + math.cos(angle) * radius
+            )
+
+            segment_y = int(
+                y + math.sin(angle) * radius * 0.7
+            )
+
+            segment_radius = max(
+                1,
+                int(
+                    size
+                    * (
+                        0.9
+                        - progress * 0.55
+                    )
+                ),
+            )
+
+            pygame.draw.circle(
+                surface,
+                color,
+                (segment_x, segment_y),
+                segment_radius,
+            )
+
+    def _draw_sleep_marks(
+        self,
+        surface: pygame.Surface,
+        x: int,
+        y: int,
+        size: int,
+        color: tuple[int, int, int],
+    ) -> None:
+        """Draw small floating 'z' marks above a sleeping worm."""
         zzz_color = _blend(
             color,
             (235, 235, 220),
@@ -273,8 +345,8 @@ class WormRenderer:
         surface.blit(
             text,
             (
-                x + outer_radius,
-                y - outer_radius - 5,
+                x + size + 2,
+                y - size - 12,
             ),
         )
 
@@ -288,25 +360,10 @@ class WormRenderer:
             surface.blit(
                 small_text,
                 (
-                    x + outer_radius + 5,
-                    y - outer_radius - 15,
+                    x + size + 6,
+                    y - size - 20,
                 ),
             )
-
-    def _render_sleeping(
-        self,
-        surface: pygame.Surface,
-        worm: Worm,
-        x: int,
-        y: int,
-    ) -> None:
-        """Render a sleeping worm."""
-        self._render_living(
-            surface,
-            worm,
-            x,
-            y,
-        )
 
     def _render_corpse(
         self,

@@ -103,6 +103,12 @@ class Worm:
 
         self.state = WormState.SLEEPING
 
+    def sleep(self) -> None:
+        """Settle into a resting state without drifting."""
+        self.target_x = None
+        self.target_y = None
+        self.wander_timer = 0.0
+
     def move_towards(
         self,
         target_x: float,
