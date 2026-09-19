@@ -16,11 +16,18 @@ class Plant:
 
     age: float = 0.0
     growth: float = 0.0
+    variation: float = 0.0
 
     growth_rate: float = 0.08
     max_growth: float = 1.0
 
     reproduction_timer: float = 0.0
+
+    def __post_init__(self) -> None:
+        """Give each plant a small, deterministic variation."""
+        if self.variation == 0.0:
+            seed = ((self.x * 37) + (self.y * 17) + (self.x * self.y)) % 97
+            self.variation = 0.15 + (seed / 97.0) * 0.85
 
     def update(
         self,
