@@ -80,6 +80,10 @@ class World:
                 Grass(
                     x=x,
                     y=plant_y,
+                    growth=self.randomizer.uniform(
+                        0.05,
+                        0.95,
+                    ),
                 )
             )
 

@@ -12,9 +12,11 @@ class Grass(Plant):
         self,
         x: int,
         y: int,
+        growth: float = 0.0,
     ) -> None:
         super().__init__(
             x=x,
             y=y,
             growth_rate=0.10,
+            growth=growth,
         )
