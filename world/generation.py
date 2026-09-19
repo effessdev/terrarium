@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import math
 
-from config import settings
 from utils.randomizer import Randomizer
 from world.terrain import TerrainCell, TerrainType
 
@@ -57,7 +56,7 @@ class WorldGenerator:
         ]
 
     def _choose_ground_level(self, height: int) -> int:
-        """Choose a varied but reasonable soil level."""
+        """Choose a varied but reasonable average soil level."""
         base_level = int(height * 0.62)
 
         variation = self.randomizer.randint(
@@ -65,25 +64,27 @@ class WorldGenerator:
             5,
         )
 
-        return base_level + variation
+        return max(
+            2,
+            min(height - 3, base_level + variation),
+        )
 
     def _generate_ground(
         self,
         terrain: list[list[TerrainCell]],
         ground_level: int,
     ) -> None:
-        """Generate soil with a naturally uneven surface."""
+        """Generate soil beneath a gently varied natural surface."""
         height = len(terrain)
         width = len(terrain[0])
 
         surface_points = self._generate_surface(
             width,
+            height,
             ground_level,
         )
 
-        for x in range(width):
-            surface_y = surface_points[x]
-
+        for x, surface_y in enumerate(surface_points):
             for y in range(surface_y, height):
                 depth = y - surface_y
 
@@ -103,70 +104,134 @@ class WorldGenerator:
     def _generate_surface(
         self,
         width: int,
+        height: int,
         ground_level: int,
     ) -> list[int]:
         """
-        Generate a gently varying ground surface.
+        Generate a smooth, organic ground surface.
 
-        Multiple low-frequency waves make the terrain look organic
-        without requiring a full noise library.
+        The surface is built from several low-frequency waves plus a
+        small amount of local variation. A short smoothing pass removes
+        abrupt cell-to-cell changes while preserving larger hills and
+        shallow valleys.
+
+        Importantly, every generated height is clamped against the
+        actual world height rather than the number of columns already
+        generated. This prevents the left edge from becoming an
+        artificial diagonal slope.
         """
+        if width <= 0 or height <= 0:
+            return []
+
         phase_a = self.randomizer.uniform(
             0.0,
             math.tau,
         )
-
         phase_b = self.randomizer.uniform(
+            0.0,
+            math.tau,
+        )
+        phase_c = self.randomizer.uniform(
             0.0,
             math.tau,
         )
 
         amplitude_a = self.randomizer.uniform(
-            2.0,
-            4.0,
+            2.5,
+            5.0,
         )
-
         amplitude_b = self.randomizer.uniform(
             1.0,
             2.5,
         )
+        amplitude_c = self.randomizer.uniform(
+            0.4,
+            1.2,
+        )
 
         frequency_a = self.randomizer.uniform(
-            0.035,
-            0.055,
+            0.025,
+            0.045,
         )
-
         frequency_b = self.randomizer.uniform(
-            0.08,
-            0.13,
+            0.07,
+            0.12,
+        )
+        frequency_c = self.randomizer.uniform(
+            0.14,
+            0.22,
         )
 
-        surface = []
+        raw_surface: list[float] = []
 
         for x in range(width):
-            wave_a = math.sin(
-                x * frequency_a + phase_a
-            ) * amplitude_a
-
-            wave_b = math.sin(
-                x * frequency_b + phase_b
-            ) * amplitude_b
-
-            small_random = self.randomizer.uniform(
-                -0.4,
-                0.4,
+            broad_shape = (
+                math.sin(x * frequency_a + phase_a)
+                * amplitude_a
             )
 
-            y = round(
+            medium_shape = (
+                math.sin(x * frequency_b + phase_b)
+                * amplitude_b
+            )
+
+            small_shape = (
+                math.sin(x * frequency_c + phase_c)
+                * amplitude_c
+            )
+
+            local_variation = self.randomizer.uniform(
+                -0.35,
+                0.35,
+            )
+
+            raw_surface.append(
                 ground_level
-                + wave_a
-                + wave_b
-                + small_random
+                + broad_shape
+                + medium_shape
+                + small_shape
+                + local_variation
             )
+
+        # Smooth neighbouring columns so the terrain does not develop
+        # unnatural one-cell steps.
+        smoothed_surface = raw_surface[:]
+
+        for _ in range(2):
+            previous = smoothed_surface[:]
+
+            for x in range(width):
+                if x == 0:
+                    smoothed_surface[x] = (
+                        previous[x] * 0.70
+                        + previous[x + 1] * 0.30
+                    )
+                elif x == width - 1:
+                    smoothed_surface[x] = (
+                        previous[x - 1] * 0.30
+                        + previous[x] * 0.70
+                    )
+                else:
+                    smoothed_surface[x] = (
+                        previous[x - 1] * 0.25
+                        + previous[x] * 0.50
+                        + previous[x + 1] * 0.25
+                    )
+
+        minimum_surface = 2
+        maximum_surface = max(
+            minimum_surface,
+            height - 4,
+        )
+
+        surface: list[int] = []
+
+        for value in smoothed_surface:
+            y = round(value)
 
             y = max(
-                1,
-                min(len(surface) + 0, y),
+                minimum_surface,
+                min(maximum_surface, y),
             )
 
             surface.append(y)
@@ -182,7 +247,10 @@ class WorldGenerator:
         width = len(terrain[0])
         height = len(terrain)
 
-        water_count = self.randomizer.randint(1, 2)
+        water_count = self.randomizer.randint(
+            1,
+            2,
+        )
 
         for _ in range(water_count):
             center_x = self.randomizer.randint(
@@ -216,8 +284,7 @@ class WorldGenerator:
                 local_depth = max(
                     1,
                     round(
-                        water_depth
-                        * edge_factor
+                        water_depth * edge_factor,
                     ),
                 )
 
