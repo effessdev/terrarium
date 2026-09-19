@@ -10,6 +10,7 @@ from core.clock import SimulationClock
 from core.day_night import DayNightCycle
 from rendering.plant_renderer import PlantRenderer
 from rendering.terrain_renderer import TerrainRenderer
+from rendering.worm_renderer import WormRenderer
 from utils.randomizer import Randomizer
 from world.world import World
 
@@ -37,7 +38,9 @@ class Game:
             settings.SIMULATION_HZ
         )
 
-        self.simulation_speed = settings.DEFAULT_SIMULATION_SPEED
+        self.simulation_speed = (
+            settings.DEFAULT_SIMULATION_SPEED
+        )
 
         self.randomizer = Randomizer()
 
@@ -69,6 +72,11 @@ class Game:
         self.font = pygame.font.Font(
             None,
             24,
+        )
+
+        self.worm_renderer = WormRenderer(
+            self.palette,
+            self.font,
         )
 
         self.running = False
@@ -113,7 +121,6 @@ class Game:
         )
 
         self.simulation_speed = speeds[new_index]
-
 
     def _set_simulation_speed(
         self,
@@ -222,6 +229,11 @@ class Game:
             self.world.plants,
         )
 
+        self.worm_renderer.render(
+            self.screen,
+            self.world.worms,
+        )
+
         if settings.SHOW_DEBUG_INFO:
             self._draw_debug_info()
 
@@ -230,6 +242,15 @@ class Game:
     def _draw_debug_info(self) -> None:
         """Draw basic runtime information."""
         fps = self.render_clock.get_fps()
+
+        living_worms = sum(
+            not worm.is_dead
+            for worm in self.world.worms
+        )
+
+        dead_worms = len(
+            self.world.worms
+        ) - living_worms
 
         lines = [
             f"FPS: {fps:.1f}",
@@ -244,6 +265,11 @@ class Game:
                 f"{len(self.world.plants)}"
             ),
             (
+                "Worms: "
+                f"{living_worms}"
+                f" + {dead_worms} rotting"
+            ),
+            (
                 "Simulation: "
                 f"{self.simulation_clock.total_simulation_time:.1f}s"
             ),
@@ -252,7 +278,7 @@ class Game:
                 f"{self.day_night.formatted_time()}"
             ),
             (
-                f"Speed: "
+                "Speed: "
                 f"{self.simulation_speed:g}x"
             ),
             (

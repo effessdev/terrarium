@@ -71,8 +71,6 @@ class PaletteGenerator:
             0.22,
         )
 
-        # A small secondary hue variation gives the palette
-        # some natural color diversity.
         green_hue = (
             base_hue
             + self.randomizer.uniform(
