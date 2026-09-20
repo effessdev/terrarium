@@ -1,0 +1,2 @@
+pygame-ce
+numpy>=1.24
