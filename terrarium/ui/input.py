@@ -47,5 +47,5 @@ class InputController:
         cell = a.config.window.cell_size
         mx, my = pygame.mouse.get_pos()
         x, y = mx // cell, my // cell
-        tool = a.tool if b[0] else TOOLS[-1]
+        tool = a.tool if b[0] else next(t for t in TOOLS if t.name == 'Erase')
         tool.apply(a.sim.ctx, x, y, a.brush)

@@ -45,6 +45,7 @@ class PhysicsConfig:
     lateral_water_passes: int = 2       # how many sideways water-spreading passes per tick
     moisture_interval: int = 4          # ticks between moisture diffusion steps
     absorb_chance: float = 0.006         # chance a water cell soaks into porous ground
+    puddle_absorb: float = 0.35         # shallow puddles / raindrops soak in fast
     water_to_wet: int = 200             # wetness units (0-255) that one water cell is worth
     drain_rate: float = 0.12
     diffusion_rate: float = 0.06

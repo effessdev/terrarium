@@ -43,7 +43,13 @@ class MoistureSystem(System):
             ok = (ty < h) & (tx >= 0) & (tx < w)
             ty, tx, sy, sx = ty[ok], tx[ok], ys[ok], xs[ok]
             ok = porous[ty, tx] & (wet[ty, tx] < 170) & (m[sy, sx] == WATER)
-            ok &= rng.random(ok.shape) < cfg.absorb_chance
+            chance = cfg.absorb_chance
+            if dy == 1:
+                # thin puddles (1-2 cells) soak in quickly, deep ponds sit on a sealed bed
+                one = m[sy - 1, sx] != WATER
+                two = m[np.maximum(sy - 2, 0), sx] != WATER
+                chance = np.where(one, cfg.puddle_absorb, np.where(two, cfg.puddle_absorb * 0.3, chance))
+            ok &= rng.random(ok.shape) < chance
             if not ok.any():
                 continue
             ty, tx, sy, sx = ty[ok], tx[ok], sy[ok], sx[ok]

@@ -91,6 +91,9 @@ class SoilMover(Behavior):
         g = ctx.grid
         x, y = int(ins.x), int(ins.y)
         spots = [(x + dx, y + dy) for dx, dy in DIRS if g.is_air(x + dx, y + dy)]
+        if ins.carry_time < 3 * self.carry_limit:          # keep hauling rather than bury a plant
+            spots = [(sx, sy) for sx, sy in spots
+                     if not g.flora_id[max(0, sy - 1):sy + 2, max(0, sx - 1):sx + 2].any()]
         if not spots:
             return False
         nx, ny = ctx.rng.choice(spots)

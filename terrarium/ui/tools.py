@@ -43,5 +43,28 @@ class Eraser(Tool):
                     p.remove_cell(ctx, x, y)
 
 
+class PlantTool(Tool):
+    name, key = "Plant", "6"
+
+    def apply(self, ctx, x, y, r) -> None:
+        from ..flora.registry import all_species
+        if ctx.rng.random() > 0.15:                      # one plant per few frames, not per frame
+            return
+        sp = ctx.rng.choice(all_species())
+        gy = ctx.grid.ground_anchor(x)
+        if gy is not None and abs(gy - y) < 12:
+            ctx.flora.spawn(sp, x, gy, steps=sp.max_steps // 2 + 1)
+
+
+class InsectTool(Tool):
+    name, key = "Insect", "7"
+
+    def apply(self, ctx, x, y, r) -> None:
+        from ..fauna.registry import all_species
+        if ctx.rng.random() > 0.1:
+            return
+        ctx.fauna.spawn(ctx.rng.choice(all_species()), x, y)
+
+
 TOOLS = [Paint("Sand", "1", SAND, 60), Paint("Soil", "2", SOIL, 110), Paint("Water", "3", WATER),
-         Paint("Rock", "4", ROCK), Eraser()]
+         Paint("Rock", "4", ROCK), Eraser(), PlantTool(), InsectTool()]

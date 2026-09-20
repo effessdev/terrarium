@@ -50,6 +50,7 @@ class Plant:
         self.dead_age = 0.0
         self.rot_n0 = 1
         self.seed_timer = rng.uniform(*species.seed_interval)
+        self.unstable = 0
 
     # ------------------------------------------------------------ cell access
     def color_of(self, part, shade, x, y):
@@ -180,9 +181,14 @@ class Plant:
             self.recolor(ctx)
 
     def _validate(self, ctx) -> bool:
+        """Drop cells buried in solid matter, then make sure the plant still has ground.
+
+        Only *solid* matter counts as burying: a raindrop or a falling grain that merely
+        passes through a leaf must not hurt the plant.  Support problems have to persist
+        for two consecutive checks before the plant reacts (again: transient grains)."""
         g = ctx.grid
         for (x, y) in list(self.cells):
-            if g.mat.item(y, x) != AIR:                 # buried by sand / flooded
+            if SOLID_PY[g.mat.item(y, x)]:
                 self.remove_cell(ctx, x, y)
         if not self.cells:
             self.die(ctx, "buried")
@@ -190,14 +196,28 @@ class Plant:
         sp = self.species
         if not sp.rooted:
             if not sp.support_ok(self, ctx):
-                self.die(ctx, "no support")
-                return False
+                self.unstable += 1
+                if self.unstable >= 2:
+                    self.die(ctx, "no support")
+                    return False
+            else:
+                self.unstable = 0
             return True
         x, y = self.x, self.y
         if SOLID_PY[g.mat_at(x, y + 1)] and g.mat_at(x, y) == AIR:
+            self.unstable = 0
             return True
-        new_y = g.ground_anchor(x)                      # ground moved: try to re-root
-        if new_y is None or abs(new_y - y) > 4:
+        self.unstable += 1
+        if self.unstable < 2:
+            return True
+        self.unstable = 0
+        new_y = None                                     # ground moved: look for it near our anchor
+        for dy in (-1, 1, -2, 2, -3, 3, -4, 4):
+            ay = y + dy
+            if 1 < ay < g.h - 2 and g.mat.item(ay, x) == AIR and SOLID_PY[g.mat.item(ay + 1, x)]:
+                new_y = ay
+                break
+        if new_y is None:
             self.die(ctx, "uprooted")
             return False
         self.shift(ctx, new_y - y)

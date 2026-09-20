@@ -57,7 +57,9 @@ class DetritusFood(FoodSource):
         g = ctx.grid
         x, y = int(ins.x), int(ins.y)
         x0, x1, y0, y1 = max(0, x - radius), min(g.w, x + radius + 1), max(0, y - radius), min(g.h, y + radius + 1)
-        ys, xs = np.nonzero(g.mat[y0:y1, x0:x1] == DETRITUS)
+        y0 = max(1, y0)
+        free = (g.mat[y0:y1, x0:x1] == DETRITUS) & (g.flora_id[y0 - 1:y1 - 1, x0:x1] == 0)
+        ys, xs = np.nonzero(free)
         if ys.size == 0:
             return None
         i = int(np.argmin((xs + x0 - x) ** 2 + (ys + y0 - y) ** 2))

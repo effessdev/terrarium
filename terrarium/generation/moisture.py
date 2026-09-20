@@ -14,8 +14,10 @@ def init_moisture(ctx) -> None:
     surf = np.array([g.surface_y(x) for x in range(g.w)])[None, :]
     ys = np.arange(g.h)[:, None]
     depth = np.clip((ys - surf) / np.maximum(g.h - surf, 1), 0.0, 1.0)
-    base = (66.0 + 190.0 * depth ** 0.6) * (0.6 + 0.8 * (1.0 - p.aridity))
-    halo = box_blur((g.mat == WATER).astype(np.float32), 5) + 0.6 * box_blur((g.mat == WATER).astype(np.float32), 11)
+    base = (78.0 + 177.0 * depth ** 0.6) * (0.6 + 0.8 * (1.0 - p.aridity))
+    wmask = (g.mat == WATER).astype(np.float32)
+    # ground near ponds starts close to equilibrium so the pond does not vanish into it
+    halo = box_blur(wmask, 5) + 0.8 * box_blur(wmask, 11) + 1.6 * box_blur(wmask, 22)
     wet = base + 300.0 * halo + npr.normal(0.0, 6.0, g.mat.shape)
     water = g.mat == WATER
     if water.any():                                   # pond beds sit on a saturated water table

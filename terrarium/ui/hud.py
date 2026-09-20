@@ -4,7 +4,7 @@ from __future__ import annotations
 import pygame
 
 HELP = ["SPACE pause   +/- speed   H hud   F1 help", "R new world   S screenshot   ESC quit",
-        "1-5 tool: sand soil water rock erase", "Left mouse paint   Right mouse erase   wheel = brush"]
+        "1-7 tool: sand soil water rock erase plant insect", "Left mouse paint   Right mouse erase   wheel = brush"]
 
 
 class Hud:
