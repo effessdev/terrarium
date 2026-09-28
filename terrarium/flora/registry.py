@@ -24,8 +24,14 @@ def _load() -> None:
         return
     _LOADED = True
     from . import species as pkg
-    for m in pkgutil.iter_modules(pkg.__path__):
-        importlib.import_module(f"{pkg.__name__}.{m.name}")
+
+    modules = list(pkgutil.iter_modules(pkg.__path__))
+    if modules:
+        for m in modules:
+            importlib.import_module(f"{pkg.__name__}.{m.name}")
+    else:
+        # PyInstaller fallback: explicitly import known plant modules
+        from .species import bush, cactus, fern, flower, grass, moss, mushroom
 
 
 def all_species() -> list:
