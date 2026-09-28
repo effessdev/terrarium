@@ -14,6 +14,9 @@ class InputController:
         a = self.app
         if event.type == pygame.QUIT:
             a.running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1 and a.show_hud and a.hud.icon_rect.collidepoint(event.pos):
+                a.show_help = not a.show_help       # help icon toggle; swallow the click
         elif event.type == pygame.KEYDOWN:
             k = event.key
             if k == pygame.K_ESCAPE:
@@ -46,6 +49,8 @@ class InputController:
             return
         cell = a.config.window.cell_size
         mx, my = pygame.mouse.get_pos()
+        if a.show_hud and a.hud.icon_rect.collidepoint(mx, my):
+            return                                  # don't paint under the help icon
         x, y = mx // cell, my // cell
         tool = a.tool if b[0] else next(t for t in TOOLS if t.name == 'Erase')
         tool.apply(a.sim.ctx, x, y, a.brush)

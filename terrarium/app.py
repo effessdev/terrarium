@@ -35,9 +35,10 @@ class App:
     def new_world(self, seed: int | None = None) -> None:
         self.sim = build_simulation(self.config, seed)
         self.renderer = Renderer(self.sim.ctx, self.screen)
-        self.hud = Hud(self.sim.ctx)
+        self.hud = Hud()
         self.accum = 0.0
-        print(f"[terrarium] {self.sim.ctx.palette.name} | {self.sim.ctx.params.describe} | seed {self.sim.ctx.rng.seed}")
+        print(
+            f"[terrarium] {self.sim.ctx.palette.name} | {self.sim.ctx.params.describe} | seed {self.sim.ctx.rng.seed}")
 
     def toggle_pause(self) -> None:
         self.speed_index = 0 if self.speed_index else self.config.time.default_speed_index
