@@ -1,0 +1,1 @@
+pyinstaller --noconfirm --onedir --windowed --name "Terrarium" main.py
